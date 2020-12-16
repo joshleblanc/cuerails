@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class TodoReflex < ApplicationReflex
-  include CableReady::Broadcaster
   delegate :render, to: ApplicationController
 
   def complete
@@ -9,7 +8,7 @@ class TodoReflex < ApplicationReflex
     todo.toggle! :complete
 
     morph :nothing
-    cable_ready[ListChannel].morph(selector: "#todo-row-#{todo.id}", html: render(partial: "todos/entry_contents", locals: { todo: todo }), children_only: true)
+    CableReady::Channels.instance[ListChannel].morph(selector: "#todo-row-#{todo.id}", html: render(partial: "todos/entry_contents", locals: { todo: todo }), children_only: true)
     cable_ready.broadcast_to(todo.list)
   end
 
@@ -18,7 +17,7 @@ class TodoReflex < ApplicationReflex
     todo.toggle! :pinned
 
     morph :nothing
-    cable_ready.morph(selector: "#todo-row-#{todo.id}", html: render(partial: "todos/entry_contents", locals: { todo: todo }), children_only: true)
+    CableReady::Channels.instance[stream_name].morph(selector: "#todo-row-#{todo.id}", html: render(partial: "todos/entry_contents", locals: { todo: todo }), children_only: true)
     cable_ready.broadcast
   end
 
@@ -28,7 +27,7 @@ class TodoReflex < ApplicationReflex
     todo.save
 
     morph :nothing
-    cable_ready[ListChannel].morph(selector: "#todo-row-#{todo.id}", html: render(partial: "todos/entry_contents", locals: { todo: todo }), children_only: true)
+    CableReady::Channels.instance[ListChannel].morph(selector: "#todo-row-#{todo.id}", html: render(partial: "todos/entry_contents", locals: { todo: todo }), children_only: true)
     cable_ready.broadcast_to(todo.list)
   end
 
@@ -44,7 +43,7 @@ class TodoReflex < ApplicationReflex
     todo.destroy
     
     morph :nothing
-    cable_ready[ListChannel].dispatch_event(name: 'deleteTodo', selector: "#todo-row-#{todoId}")
+    CableReady::Channels.instance[ListChannel].dispatch_event(name: 'deleteTodo', selector: "#todo-row-#{todoId}")
     cable_ready.broadcast_to(list)
   end
 
@@ -55,7 +54,7 @@ class TodoReflex < ApplicationReflex
     new_todo = Todo.create(list: list, title: todo.title, position: new_index + 1)
     new_todo.save
 
-    cable_ready[ListChannel].remove(selector: "#todo-row-added")
+    CableReady::Channels.instance[ListChannel].remove(selector: "#todo-row-added")
     cable_ready.broadcast_to(todo.list)
 
     # morph "#todo-row-added", render(partial: "todos/entry", locals: { todo: new_todo })
@@ -67,7 +66,7 @@ class TodoReflex < ApplicationReflex
     todo.save
 
     morph :nothing
-    cable_ready[ListChannel].morph(selector: "#list-panel-#{todo.list.id}", html: render(partial: "lists/panel", locals: { list: todo.list }), children_only: true)
+    CableReady::Channels.instance[ListChannel].morph(selector: "#list-panel-#{todo.list.id}", html: render(partial: "lists/panel", locals: { list: todo.list }), children_only: true)
     cable_ready.broadcast_to(todo.list)
   end
 
@@ -78,7 +77,7 @@ class TodoReflex < ApplicationReflex
     new_todo.save
 
     morph :nothing
-    cable_ready[ListChannel].insert_adjacent_html(selector: "#todo-row-#{todo.id}", position: :afterend, html: render(partial: "todos/entry", locals: { todo: new_todo }))
+    CableReady::Channels.instance[ListChannel].insert_adjacent_html(selector: "#todo-row-#{todo.id}", position: :afterend, html: render(partial: "todos/entry", locals: { todo: new_todo }))
     cable_ready.broadcast_to(todo.list)
   end
 
